@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apoastro Lançamentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: cabeçalho fixo + 3 páginas (menu, simule, contato) trocadas pelo #hash.
+   O simulador tem 2 colunas (mapa | painel de configuração) e vira 1 coluna no celular. */
+:root {
+  color-scheme: dark;
+  /* Cores: fundo preto + tons pastel */
+  --bg: #050508;
+  --bg-topo: rgba(5, 5, 8, 0.86);
+  --surface: #0e0e14;
+  --surface-2: #16161f;
+  --line: #262633;
+  --fg: #efedf7;
+  --muted: #9a97ad;
+  --escuro: #15121f;          /* texto sobre botões pastel */
+  --lavanda: #c9b6f2;
+  --rosa: #f6b8c8;
+  --menta: #b4ecd5;
+  --pessego: #ffd3a8;
+  --ceu: #a9d6f5;
+  --limao: #f1eca0;
+
+  /* Tipografia */
+  --f-display: "Unbounded", "Trebuchet MS", system-ui, sans-serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --raio: 14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg-topo);
+}
+h1, h2, h3 { font-family: var(--f-display); font-weight: 600; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+a { color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--lavanda); outline-offset: 3px; border-radius: 6px; }
+
+/* Céu estrelado no fundo */
+#ceu { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.topo, main, .rodape { position: relative; z-index: 1; }
+
+.wrap {
+  max-width: 1200px; margin: 0 auto;
+  padding-left: max(clamp(16px, 4vw, 40px), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(16px, 4vw, 40px), env(safe-area-inset-right, 0px));
+}
+
+/* ---------- Cabeçalho ---------- */
+.topo {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  background: var(--bg-topo);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.topo-in { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.marca { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--f-display); font-weight: 600; font-size: 17px; letter-spacing: 0.01em; }
+.marca svg { width: 30px; height: 30px; flex: none; }
+.nav { display: flex; align-items: center; gap: 4px; }
+.nav a, .btn-reservas {
+  text-decoration: none; font-size: 15px; font-weight: 500; color: var(--muted);
+  padding: 8px 12px; border-radius: 999px; background: none; border: 0; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: color .2s, background .2s;
+}
+.nav a:hover, .btn-reservas:hover { color: var(--fg); background: var(--surface-2); }
+.nav a[aria-current="page"] { color: var(--fg); background: var(--surface-2); }
+.contador {
+  font-family: var(--f-mono); font-size: 12px; min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 999px; background: var(--pessego); color: var(--escuro);
+  display: inline-grid; place-items: center; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 520px) {
+  .marca span { display: none; }
+  .nav a, .btn-reservas { padding: 8px 10px; font-size: 14px; }
+}
+
+/* ---------- Menu (página inicial) ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 40px; align-items: center; padding-block: 72px 40px; }
+.hero-texto { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--menta); }
+.hero h1 { font-size: clamp(36px, 6vw, 66px); line-height: 1.04; letter-spacing: -0.02em; }
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(95deg, var(--rosa), var(--lavanda) 45%, var(--ceu));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.lead { font-size: 18px; color: var(--muted); max-width: 54ch; }
+.hero-arte { width: 100%; max-width: 440px; justify-self: center; height: auto; }
+.h-orb { fill: none; stroke: var(--lavanda); stroke-width: 1.4; }
+.h-orb-2 { stroke: var(--line); stroke-dasharray: 3 6; }
+.h-rotulo { font-family: var(--f-mono); font-size: 12px; fill: var(--muted); }
+.h-sat { fill: var(--pessego); }
+
+.escolhas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-bottom: 32px; }
+.escolha {
+  position: relative; display: flex; flex-direction: column; gap: 8px;
+  padding: 26px 26px 28px; border-radius: var(--raio); text-decoration: none;
+  border: 1px solid var(--line); background: var(--surface);
+  transition: border-color .25s, transform .25s, background .25s;
+}
+.escolha:hover { transform: translateY(-3px); }
+.escolha-sim:hover { border-color: var(--lavanda); background: color-mix(in srgb, var(--lavanda) 7%, var(--surface)); }
+.escolha-con:hover { border-color: var(--menta); background: color-mix(in srgb, var(--menta) 7%, var(--surface)); }
+.escolha-k { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.escolha-sim .escolha-k { color: var(--lavanda); }
+.escolha-con .escolha-k { color: var(--menta); }
+.escolha-t { font-family: var(--f-display); font-size: 24px; font-weight: 600; }
+.escolha-d { color: var(--muted); max-width: 44ch; }
+.escolha-seta { position: absolute; top: 24px; right: 24px; font-size: 22px; color: var(--muted); transition: transform .25s, color .25s; }
+.escolha:hover .escolha-seta { transform: translateX(4px); color: var(--fg); }
+
+.fatos { display: flex; flex-wrap: wrap; gap: 12px 32px; padding-block: 8px 64px; margin: 0; }
+.fatos div { display: flex; flex-direction: column; gap: 2px; }
+.fatos dt { font-family: var(--f-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.fatos dd { margin: 0; font-family: var(--f-display); font-size: 18px; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; padding-block: 40px 24px; gap: 24px; }
+  .hero-arte { max-width: 300px; order: -1; }
+  .escolhas { grid-template-columns: 1fr; }
+}
+
+/* ---------- Simulador ---------- */
+.sim-cab { display: flex; flex-direction: column; gap: 8px; padding-block: 40px 24px; }
+.sim-cab h2 { font-size: clamp(26px, 3.6vw, 36px); }
+.sim-cab p { color: var(--muted); max-width: 62ch; }
+.sim-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.mapa-box { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 80px); display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#mapa { width: 100%; max-width: 620px; height: auto; aspect-ratio: 1; display: block; margin: 0 auto; }
+#mapa { --k: 1; }
+.trilha { fill: none; stroke: var(--line); stroke-width: 1; transition: stroke .3s; vector-effect: non-scaling-stroke; }
+.trilha.sel { stroke-width: 1.5; }
+.pl-aneis { vector-effect: non-scaling-stroke; }
+.pl { cursor: pointer; outline: none; }
+.pl-hit { fill: transparent; }
+.pl-anel { fill: none; stroke: var(--fg); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: 0; transition: opacity .2s; vector-effect: non-scaling-stroke; }
+.pl:hover .pl-anel, .pl:focus-visible .pl-anel, .pl.sel .pl-anel { opacity: 1; }
+.pl-nome { font-family: var(--f-mono); font-size: calc(15px / var(--k)); fill: var(--fg); opacity: 0; transition: opacity .2s; pointer-events: none; }
+.pl:hover .pl-nome, .pl:focus-visible .pl-nome, .pl.sel .pl-nome { opacity: 1; }
+
+.mapa-ctrl { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.nota { font-size: 13px; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 14px;
+  transition: border-color .2s, background .2s;
+}
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--surface-2); border-color: var(--fg); }
+.chip i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+
+.btn-sec {
+  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+  cursor: pointer; font-size: 14px; transition: border-color .2s;
+}
+.btn-sec:hover { border-color: var(--muted); }
+
+/* Painel de configuração */
+.painel { border: 1px solid var(--line); border-radius: var(--raio); background: var(--surface); min-width: 0; }
+.passo { padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+.passo + .passo { border-top: 1px solid var(--line); }
+.passo-cab { display: flex; align-items: center; gap: 12px; }
+.passo-n {
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  font-family: var(--f-mono); font-size: 13px; background: var(--surface-2); color: var(--lavanda); border: 1px solid var(--line);
+}
+.passo-cab h3 { font-size: 16px; letter-spacing: 0.01em; }
+
+.planeta-topo { display: flex; align-items: center; gap: 14px; }
+.planeta-bola { width: 44px; height: 44px; border-radius: 50%; flex: none; box-shadow: inset -8px -6px 14px rgba(0,0,0,.35); }
+.planeta-nome { font-family: var(--f-display); font-size: 24px; font-weight: 600; }
+.planeta-desc { color: var(--muted); font-size: 15px; }
+
+.dados { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px 18px; margin: 0; }
+.dados div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dados dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.dados dd { margin: 0; font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.abas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.aba {
+  display: flex; flex-direction: column; align-items: center; gap: 0; padding: 8px 6px; border: 0; border-radius: 9px;
+  background: none; cursor: pointer; font-family: var(--f-display); font-size: 15px; font-weight: 600; color: var(--muted);
+  transition: background .2s, color .2s;
+}
+.aba small { font-family: var(--f-body); font-size: 12px; font-weight: 500; }
+.aba:hover:not(:disabled) { color: var(--fg); }
+.aba[aria-pressed="true"] { background: var(--lavanda); color: var(--escuro); }
+.aba:disabled { opacity: .35; cursor: not-allowed; }
+
+.campo { display: flex; flex-direction: column; gap: 6px; }
+.campo label, .rotulo { font-size: 13px; color: var(--muted); }
+.linha-alt { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.valor-grande { font-family: var(--f-mono); font-size: 22px; font-variant-numeric: tabular-nums; }
+.faixa { font-size: 13px; color: var(--muted); font-family: var(--f-mono); }
+input[type="range"] { width: 100%; accent-color: var(--lavanda); height: 24px; margin: 0; }
+
+.switch { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; font-weight: 500; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch-trilho { width: 42px; height: 24px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); position: relative; flex: none; transition: background .2s; }
+.switch-trilho::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+.switch input:checked + .switch-trilho { background: color-mix(in srgb, var(--lavanda) 30%, var(--surface-2)); border-color: var(--lavanda); }
+.switch input:checked + .switch-trilho::after { transform: translateX(18px); background: var(--lavanda); }
+.switch input:focus-visible + .switch-trilho { outline: 2px solid var(--lavanda); outline-offset: 3px; }
+.switch small { color: var(--muted); font-weight: 400; font-size: 13px; }
+
+.avancado { display: flex; flex-direction: column; gap: 16px; padding: 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.entrada {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+  font-family: var(--f-mono); font-size: 15px; font-variant-numeric: tabular-nums;
+}
+.entrada:focus { border-color: var(--lavanda); outline: none; }
+.entrada:focus-visible { outline: 2px solid var(--lavanda); outline-offset: 1px; }
+.inc-linha { display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 12px; align-items: center; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset { padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; font-size: 13px; }
+.preset:hover:not(:disabled) { border-color: var(--lavanda); }
+.preset:disabled { opacity: .35; cursor: not-allowed; }
+.dica { font-size: 13px; color: var(--muted); }
+
+.diagramas { display: grid; grid-template-columns: minmax(0, 1fr) 128px; gap: 12px; }
+.diag { width: 100%; height: auto; display: block; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.d-orb { fill: none; stroke: var(--lavanda); stroke-width: 1.6; }
+.d-eq { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; }
+.d-txt { font-family: var(--f-mono); font-size: 11px; fill: var(--muted); }
+.d-txt-f { fill: var(--fg); }
+.d-sat { fill: var(--pessego); }
+.d-anel { fill: none; stroke: var(--limao); opacity: .22; }
+
+.alerta { font-size: 14px; padding: 10px 12px; border-radius: 10px; border: 1px solid; }
+.alerta-erro { color: var(--rosa); border-color: color-mix(in srgb, var(--rosa) 45%, transparent); background: color-mix(in srgb, var(--rosa) 8%, transparent); }
+.alerta-aviso { color: var(--pessego); border-color: color-mix(in srgb, var(--pessego) 45%, transparent); background: color-mix(in srgb, var(--pessego) 8%, transparent); }
+.link-btn { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font-weight: 600; }
+
+/* Naves */
+.naves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nave {
+  display: flex; gap: 12px; align-items: stretch; text-align: left; padding: 14px 14px 14px 10px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg); cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.nave:hover:not(:disabled) { border-color: var(--muted); }
+.nave[aria-checked="true"] { border-color: var(--cor-nave); background: color-mix(in srgb, var(--cor-nave) 8%, var(--bg)); }
+.nave:disabled { opacity: .45; cursor: not-allowed; }
+.nave-svg { width: 32px; height: 80px; flex: none; }
+.nave-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.nave-topo { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.nave-nome { font-family: var(--f-display); font-weight: 600; font-size: 16px; }
+.tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.nave-desc { font-size: 13px; color: var(--muted); }
+.nave-cap { font-family: var(--f-mono); font-size: 13px; color: var(--cor-nave); font-variant-numeric: tabular-nums; }
+.nave:disabled .nave-cap { color: var(--muted); }
+
+/* Janelas de lançamento */
+.pilha { display: flex; flex-direction: column; gap: 14px; }
+.janelas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.janela {
+  display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 12px 14px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--bg); cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.janela:hover { border-color: var(--muted); }
+.janela[aria-checked="true"] { border-color: var(--pessego); background: color-mix(in srgb, var(--pessego) 8%, var(--bg)); }
+.janela-st { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.janela-st.aberta { color: var(--menta); }
+.janela-l { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-family: var(--f-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.janela-l small { font-family: var(--f-body); font-size: 12px; color: var(--muted); }
+.janela-w { font-size: 12px; color: var(--muted); }
+#diagJanela { max-width: 420px; margin: 0 auto; }
+.j-orb { fill: none; stroke: var(--line); stroke-width: 1; }
+.j-rota { fill: none; stroke: var(--pessego); stroke-width: 1.6; stroke-dasharray: 4 4; }
+.j-raio { stroke: var(--muted); stroke-width: 0.8; opacity: .55; }
+.j-fase { fill: none; stroke: var(--lavanda); stroke-width: 1.4; }
+.legenda-j { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); }
+.legenda-j span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-j i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+.legenda-j b { width: 16px; border-top: 2px dashed var(--pessego); display: block; }
+.mapa-data { display: flex; align-items: baseline; gap: 6px 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.mapa-data strong { font-family: var(--f-mono); font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
+.transf-arco { fill: none; stroke: var(--pessego); stroke-width: 1.5; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; opacity: .85; }
+.transf-nave { fill: var(--pessego); }
+@media (max-width: 520px) { .janelas { grid-template-columns: 1fr; } }
+
+/* Resumo */
+.tabela-dv { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tabela-dv td { padding: 7px 0; border-bottom: 1px solid var(--line); }
+.tabela-dv td:last-child { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 12px; }
+.tabela-dv tr.total td { border-bottom: 0; font-weight: 600; color: var(--fg); }
+.tabela-dv tr.total td:last-child { color: var(--lavanda); }
+.preco-box { display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.preco-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.preco-total span { color: var(--muted); font-size: 14px; }
+.preco-total strong { font-family: var(--f-display); font-size: clamp(26px, 3.2vw, 32px); font-weight: 600; color: var(--pessego); font-variant-numeric: tabular-nums; }
+.btn {
+  appearance: none; border: 0; cursor: pointer; padding: 14px 22px; border-radius: 999px;
+  background: var(--lavanda); color: var(--escuro); font-family: var(--f-display); font-weight: 600; font-size: 15px;
+  transition: transform .15s, filter .2s;
+}
+.btn:hover:not(:disabled) { filter: brightness(1.08); }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.btn:disabled { background: var(--surface); color: var(--muted); border: 1px solid var(--line); cursor: not-allowed; }
+
+/* Reservas */
+.reservas { padding-block: 56px 64px; display: flex; flex-direction: column; gap: 16px; }
+.reservas h2 { font-size: 24px; }
+.lista-res { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.res {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 16px; align-items: center;
+  padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+}
+.res-cod { font-family: var(--f-mono); font-size: 13px; color: var(--lavanda); }
+.res-desc { display: flex; flex-direction: column; min-width: 0; }
+.res-desc strong { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.res-desc strong i { width: 9px; height: 9px; border-radius: 50%; display: block; flex: none; }
+.res-desc span { font-size: 13px; color: var(--muted); }
+.res-preco { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.vazio { color: var(--muted); padding: 22px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; }
+@media (max-width: 640px) {
+  .res { grid-template-columns: minmax(0, 1fr) auto; }
+  .res-cod { grid-column: 1 / -1; }
+}
+
+@media (max-width: 960px) {
+  .sim-grid { grid-template-columns: 1fr; }
+  .mapa-box { position: static; }
+  #mapa { max-width: 480px; }
+}
+@media (max-width: 520px) {
+  .naves { grid-template-columns: 1fr; }
+  .duas { grid-template-columns: 1fr; }
+  .diagramas { grid-template-columns: 1fr; }
+  .diag-lado { max-width: 160px; }
+  .passo { padding: 18px 16px 20px; }
+}
+
+/* ---------- Contato ---------- */
+.contato { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 40px; padding-block: 48px 72px; align-items: start; }
+.contato-info { display: flex; flex-direction: column; gap: 24px; }
+.contato-info h2 { font-size: clamp(28px, 4vw, 40px); }
+.contato-info > p { color: var(--muted); max-width: 46ch; }
+.canais { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+.canais div { display: flex; flex-direction: column; gap: 2px; }
+.canais dt { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+.canais dd { margin: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.canais code { font-family: var(--f-mono); font-size: 15px; user-select: all; }
+.faq { display: flex; flex-direction: column; gap: 8px; }
+.faq h3 { font-size: 15px; margin-bottom: 4px; }
+.faq details { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.faq summary { padding: 12px 16px; cursor: pointer; font-weight: 500; }
+.faq details p { padding: 0 16px 14px; color: var(--muted); font-size: 15px; }
+.form { display: flex; flex-direction: column; gap: 16px; padding: 26px; border-radius: var(--raio); background: var(--surface); border: 1px solid var(--line); }
+.form h3 { font-size: 18px; }
+textarea.entrada { min-height: 140px; resize: vertical; font-family: var(--f-body); }
+select.entrada { font-family: var(--f-body); }
+.ok { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.ok-icone { width: 44px; height: 44px; border-radius: 50%; background: var(--menta); color: var(--escuro); display: grid; place-items: center; font-size: 22px; }
+.ok p { color: var(--muted); }
+@media (max-width: 860px) { .contato { grid-template-columns: 1fr; gap: 28px; } .form { padding: 20px 16px; } }
+
+/* ---------- Rodapé e toast ---------- */
+.rodape { border-top: 1px solid var(--line); }
+.rodape .wrap { padding-block: 22px; font-size: 13px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  max-width: min(92vw, 460px); padding: 12px 18px; border-radius: 12px;
+  background: var(--menta); color: var(--escuro); font-weight: 500; font-size: 15px;
+  transition: opacity .25s, transform .25s;
+}
+.toast.visivel { opacity: 1; transform: translate(-50%, 0); }
+
+.pagina { animation: entra .35s ease both; }
+@keyframes entra { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="ceu" aria-hidden="true"></canvas>
+
+<header class="topo">
+  <div class="wrap topo-in">
+    <a class="marca" href="#menu" aria-label="Apoastro, voltar ao menu">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <ellipse cx="14" cy="16" rx="13" ry="7" fill="none" stroke="#c9b6f2" stroke-width="1.6" transform="rotate(-20 16 16)"/>
+        <circle cx="10" cy="17" r="5" fill="#a9d6f5"/>
+        <circle cx="26.5" cy="11.5" r="2.2" fill="#ffd3a8"/>
+      </svg>
+      <span>Apoastro</span>
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a href="#simule" data-rota="simule">Simule</a>
+      <a href="#contato" data-rota="contato">Contato</a>
+      <button class="btn-reservas" id="btnReservas" type="button">Reservas <span class="contador" id="contReservas">0</span></button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ===================== MENU ===================== -->
+  <section class="pagina" data-pagina="menu">
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-texto">
+          <p class="eyebrow">Porto Espacial Marco Zero · Macapá, AP · latitude 0°</p>
+          <h1>Seu satélite, na <em>órbita certa.</em></h1>
+          <p class="lead">Escolha o planeta, defina a órbita e reserve uma vaga em um dos nossos quatro lançadores. A empresa é fictícia, mas o Δv é calculado com mecânica orbital de verdade.</p>
+        </div>
+        <svg class="hero-arte" viewBox="0 0 400 400" aria-hidden="true">
+          <defs>
+            <radialGradient id="gHero" cx="35%" cy="30%" r="75%">
+              <stop offset="0" stop-color="#e4f3ff"/>
+              <stop offset=".55" stop-color="#a9d6f5"/>
+              <stop offset="1" stop-color="#5d86a8"/>
+            </radialGradient>
+          </defs>
+          <circle cx="240" cy="200" r="96" class="h-orb h-orb-2"/>
+          <ellipse id="heroOrbita" cx="157.5" cy="200" rx="150" ry="125.3" class="h-orb"/>
+          <circle cx="240" cy="200" r="46" fill="url(#gHero)"/>
+          <circle cx="307.5" cy="200" r="3" fill="#c9b6f2"/>
+          <circle cx="7.5" cy="200" r="3" fill="#c9b6f2"/>
+          <text x="314" y="190" class="h-rotulo">Pe</text>
+          <text x="14" y="190" class="h-rotulo">Ap</text>
+          <circle id="heroSat" cx="307.5" cy="200" r="6" class="h-sat"/>
+        </svg>
+      </div>
+
+      <div class="escolhas">
+        <a class="escolha escolha-sim" href="#simule">
+          <span class="escolha-k">Simule</span>
+          <span class="escolha-t">Montar uma missão</span>
+          <span class="escolha-d">Mapa do Sistema Solar, órbitas LEO, MEO e GEO e um modo avançado com periapse, apoapse e inclinação.</span>
+          <span class="escolha-seta" aria-hidden="true">→</span>
+        </a>
+        <a class="escolha escolha-con" href="#contato">
+          <span class="escolha-k">Contato</span>
+          <span class="escolha-t">Falar com a equipe</span>
+          <span class="escolha-d">Orçamentos de carga dividida, parcerias com universidades e visitas ao porto espacial.</span>
+          <span class="escolha-seta" aria-hidden="true">→</span>
+        </a>
+      </div>
+
+      <dl class="fatos">
+        <div><dt>Lançadores</dt><dd>4 modelos</dd></div>
+        <div><dt>Destinos</dt><dd>8 planetas</dd></div>
+        <div><dt>Ganho do equador</dt><dd>+465 m/s</dd></div>
+        <div><dt>A partir de</dt><dd>R$ 35 mi</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ===================== SIMULE ===================== -->
+  <section class="pagina" data-pagina="simule" hidden>
+    <div class="wrap">
+      <div class="sim-cab">
+        <h2>Simulador de missão</h2>
+        <p>Clique em um planeta no mapa, escolha a órbita e a nave. O preço muda conforme o Δv necessário para chegar lá.</p>
+      </div>
+
+      <div class="sim-grid">
+        <div class="mapa-box">
+          <svg id="mapa" viewBox="0 0 800 800" role="group" aria-label="Mapa do Sistema Solar. Use os planetas para escolher o destino."></svg>
+          <div class="mapa-data">
+            <span>Data no mapa</span><strong id="dataMapa">—</strong>
+            <span class="nota" id="statusTransf"></span>
+          </div>
+          <div class="mapa-ctrl">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-sec" id="btnPausa" type="button">Pausar órbitas</button>
+              <button class="btn-sec" id="btnHoje" type="button">Voltar para hoje</button>
+              <button class="btn-sec" id="btnZoom" type="button" hidden>← Ver sistema completo</button>
+            </div>
+            <span class="nota">Posições aproximadas · distâncias fora de escala</span>
+          </div>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <div class="painel" id="painel">
+          <!-- 1. Destino -->
+          <section class="passo" aria-labelledby="t1">
+            <header class="passo-cab"><span class="passo-n">1</span><h3 id="t1">Destino</h3></header>
+            <div class="planeta-topo">
+              <span class="planeta-bola" id="plBola"></span>
+              <div>
+                <div class="planeta-nome" id="plNome">Terra</div>
+              </div>
+            </div>
+            <p class="planeta-desc" id="plDesc"></p>
+            <dl class="dados" id="plDados"></dl>
+          </section>
+
+          <!-- 2. Órbita -->
+          <section class="passo" aria-labelledby="t2">
+            <header class="passo-cab"><span class="passo-n">2</span><h3 id="t2">Órbita</h3></header>
+
+            <div id="modoSimples" class="campo" style="gap:14px">
+              <div class="abas" id="abas">
+                <button class="aba" type="button" data-tipo="LEO" aria-pressed="true">LEO<small>baixa</small></button>
+                <button class="aba" type="button" data-tipo="MEO" aria-pressed="false">MEO<small>média</small></button>
+                <button class="aba" type="button" data-tipo="GEO" aria-pressed="false">GEO<small id="nomeSinc">síncrona</small></button>
+              </div>
+              <div class="campo">
+                <div class="linha-alt">
+                  <label for="altitude">Altitude</label>
+                  <output class="valor-grande" id="altOut" for="altitude">550 km</output>
+                </div>
+                <input type="range" id="altitude" min="160" max="2000" step="10" value="550">
+                <p class="faixa" id="faixa"></p>
+              </div>
+            </div>
+
+            <label class="switch" for="avancado">
+              <input type="checkbox" id="avancado">
+              <span class="switch-trilho" aria-hidden="true"></span>
+              <span>Modo avançado <small>periapse, apoapse e inclinação</small></span>
+            </label>
+
+            <div class="avancado" id="modoAvancado" hidden>
+              <div class="duas">
+                <div class="campo">
+                  <label for="altP" id="lblP">Periapse (km)</label>
+                  <input class="entrada" type="number" id="altP" inputmode="numeric" step="10">
+                </div>
+                <div class="campo">
+                  <label for="altA" id="lblA">Apoapse (km)</label>
+                  <input class="entrada" type="number" id="altA" inputmode="numeric" step="10">
+                </div>
+              </div>
+              <div class="campo">
+                <label for="inc">Inclinação</label>
+                <div class="inc-linha">
+                  <input type="range" id="inc" min="0" max="180" step="0.1" value="0">
+                  <input class="entrada" type="number" id="incNum" min="0" max="180" step="0.1" value="0" aria-label="Inclinação em graus">
+                </div>
+                <div class="presets" id="presets">
+                  <button class="preset" type="button" data-inc="0">Equatorial 0°</button>
+                  <button class="preset" type="button" data-inc="51.6" data-so-terra="1">Como a ISS 51,6°</button>
+                  <button class="preset" type="button" data-inc="90">Polar 90°</button>
+                  <button class="preset" type="button" data-inc="sso" data-so-terra="1" id="presetSSO">Sol-síncrona</button>
+                </div>
+                <p class="dica" id="incDica"></p>
+              </div>
+            </div>
+
+            <div class="diagramas">
+              <svg class="diag" id="diagTopo" viewBox="0 0 300 190" role="img" aria-label="Formato da órbita em escala"></svg>
+              <svg class="diag diag-lado" id="diagLado" viewBox="0 0 140 140" role="img" aria-label="Inclinação da órbita"></svg>
+            </div>
+            <dl class="dados" id="orbDados"></dl>
+            <p class="alerta alerta-aviso" id="orbAviso" hidden></p>
+            <p class="alerta alerta-erro" id="orbErro" role="alert" hidden></p>
+          </section>
+
+          <!-- 3. Data de lançamento -->
+          <section class="passo" aria-labelledby="t3">
+            <header class="passo-cab"><span class="passo-n">3</span><h3 id="t3">Data de lançamento</h3></header>
+            <div class="campo">
+              <label for="dataMin" id="lblData">Lançar a partir de</label>
+              <input class="entrada" type="date" id="dataMin">
+            </div>
+            <p class="dica" id="janelaDica"></p>
+            <div class="pilha" id="janelaBox" hidden>
+              <dl class="dados" id="janelaDados"></dl>
+              <div class="janelas" id="janelas" role="radiogroup" aria-labelledby="t3"></div>
+              <svg class="diag" id="diagJanela" viewBox="0 0 300 200" role="img" aria-label="Posição dos planetas na partida e na chegada"></svg>
+              <p class="legenda-j" id="legendaJ"></p>
+              <button class="btn-sec" type="button" id="btnVerTransf">Ver a viagem no mapa</button>
+            </div>
+          </section>
+
+          <!-- 4. Nave -->
+          <section class="passo" aria-labelledby="t4n">
+            <header class="passo-cab"><span class="passo-n">4</span><h3 id="t4n">Nave</h3></header>
+            <div class="naves" id="naves" role="radiogroup" aria-labelledby="t4n"></div>
+          </section>
+
+          <!-- 4. Carga e resumo -->
+          <section class="passo" aria-labelledby="t4">
+            <header class="passo-cab"><span class="passo-n">5</span><h3 id="t4">Carga e resumo</h3></header>
+            <div class="campo">
+              <label for="carga">Massa da carga útil (kg)</label>
+              <input class="entrada" type="number" id="carga" min="1" step="10" value="800" inputmode="numeric">
+            </div>
+            <p class="alerta alerta-erro" id="cargaErro" hidden></p>
+
+            <table class="tabela-dv" id="tabelaDv"></table>
+            <dl class="dados" id="resumoDados"></dl>
+
+            <div class="preco-box">
+              <table class="tabela-dv" id="tabelaPreco"></table>
+              <div class="preco-total"><span>Total estimado</span><strong id="precoTotal">R$ 0</strong></div>
+              <button class="btn" type="button" id="btnReservar">Reservar lançamento</button>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <section class="reservas" id="reservas" aria-labelledby="tRes">
+        <h2 id="tRes">Minhas reservas</h2>
+        <ul class="lista-res" id="listaRes"></ul>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===================== CONTATO ===================== -->
+  <section class="pagina" data-pagina="contato" hidden>
+    <div class="wrap contato">
+      <div class="contato-info">
+        <p class="eyebrow">Contato</p>
+        <h2>Fale com a torre de controle</h2>
+        <p>Respondemos orçamentos, dúvidas técnicas e pedidos de visita em até dois dias úteis.</p>
+        <dl class="canais">
+          <div><dt>E-mail</dt><dd><code id="emailTxt">contato@apoastro.space</code><button class="btn-sec" type="button" id="btnCopiar">Copiar</button></dd></div>
+          <div><dt>Telefone</dt><dd><code>+55 (96) 4002-1957</code></dd></div>
+          <div><dt>Endereço</dt><dd>Porto Espacial Marco Zero, Hangar 3 · Macapá, AP</dd></div>
+          <div><dt>Atendimento</dt><dd>Segunda a sexta, 8h às 18h (UTC−3)</dd></div>
+        </dl>
+        <div class="faq">
+          <h3>Perguntas frequentes</h3>
+          <details>
+            <summary>Por que lançar do equador?</summary>
+            <p>No equador a Terra gira a cerca de 465 m/s para leste. Lançando nessa direção, o foguete já sai com essa velocidade de brinde e gasta menos combustível.</p>
+          </details>
+          <details>
+            <summary>Posso dividir um lançamento com outra empresa?</summary>
+            <p>Sim. Na Arara e no Tuiuiú vendemos vagas de carga compartilhada. Mande a massa e a órbita desejada pelo formulário.</p>
+          </details>
+          <details>
+            <summary>Os preços são reais?</summary>
+            <p>Não. O preço sai de uma fórmula fictícia que cresce com o Δv da missão e com a massa da carga.</p>
+          </details>
+        </div>
+      </div>
+
+      <form class="form" id="formContato" novalidate>
+        <div id="formCampos" style="display:flex;flex-direction:column;gap:16px">
+          <h3>Envie uma mensagem</h3>
+          <div class="campo"><label for="nome">Nome</label><input class="entrada" id="nome" name="nome" required autocomplete="name" placeholder="Ana Souza"></div>
+          <div class="campo"><label for="email">E-mail</label><input class="entrada" id="email" name="email" type="email" required autocomplete="email" placeholder="ana@exemplo.com"></div>
+          <div class="campo">
+            <label for="assunto">Assunto</label>
+            <select class="entrada" id="assunto" name="assunto">
+              <option>Orçamento de lançamento</option>
+              <option>Carga compartilhada</option>
+              <option>Parceria com universidade</option>
+              <option>Visita ao porto espacial</option>
+              <option>Outro</option>
+            </select>
+          </div>
+          <div class="campo"><label for="mensagem">Mensagem</label><textarea class="entrada" id="mensagem" name="mensagem" required placeholder="Quero colocar um cubesat de 4 kg em órbita polar a 500 km."></textarea></div>
+          <p class="alerta alerta-erro" id="formErro" hidden></p>
+          <button class="btn" type="submit">Enviar mensagem</button>
+        </div>
+        <div class="ok" id="formOk" hidden>
+          <span class="ok-icone" aria-hidden="true">✓</span>
+          <h3 id="okTitulo">Mensagem registrada</h3>
+          <p id="okTexto"></p>
+          <button class="btn-sec" type="button" id="btnNovaMsg">Escrever outra mensagem</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="rodape">
+  <div class="wrap">
+    <span>Apoastro Lançamentos é uma empresa fictícia.</span>
+    <span>Dados planetários: valores médios do NASA Planetary Fact Sheet.</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* =====================================================
+     1. CONSTANTES FÍSICAS
+     ===================================================== */
+  const MU_SOL = 1.32712440018e11;   // parâmetro gravitacional do Sol (km³/s²)
+  const UA = 1.495978707e8;          // unidade astronômica (km)
+  const V_ROT_TERRA = 0.465;         // velocidade da rotação da Terra no equador (km/s)
+  const DV_SUBIDA = 9.8;             // Δv típico para chegar a 200 km, sem ajuda da rotação (km/s)
+  const DV_REF = DV_SUBIDA - V_ROT_TERRA; // Δv de referência: LEO equatorial a 200 km
+
+  /* =====================================================
+     2. CLASSES
+     ===================================================== */
+  class Planeta {
+    constructor(dados) { Object.assign(this, dados); }
+
+    // gravidade na superfície em m/s²
+    get gravidade() { return this.mu / (this.raio * this.raio) * 1000; }
+
+    // raio da esfera de Hill: até onde a gravidade do planeta "manda" mais que a do Sol
+    get raioHill() { return this.ua * UA * Math.cbrt(this.mu / (3 * MU_SOL)); }
+
+    // raio da órbita síncrona (período = dia sideral) pela 3ª lei de Kepler
+    get raioSincrono() {
+      const T = Math.abs(this.rotacaoH) * 3600;
+      return Math.cbrt(this.mu * T * T / (4 * Math.PI * Math.PI));
+    }
+    get temSincrona() { return this.raioSincrono < this.raioHill / 2; }
+    get altSincrona() { return Math.round(this.raioSincrono - this.raio); }
+    get altMaxima()   { return arred(this.raioHill / 2 - this.raio, 1000); }
+
+    // faixas de altitude de cada tipo de órbita
+    get faixas() {
+      const leoMax = Math.max(this.altMin + 300, arred(this.raio * 0.314, 10));
+      const meoMax = this.temSincrona
+        ? this.altSincrona - 100
+        : arred(Math.min(this.raio * 15, this.altMaxima), 100);
+      return {
+        LEO: [this.altMin, leoMax],
+        MEO: [leoMax, meoMax],
+        GEO: this.temSincrona ? [this.altSincrona, this.altSincrona] : null
+      };
+    }
+  }
+
+  class Nave {
+    constructor(dados) { Object.assign(this, dados); }
+
+    // carga máxima (kg) para uma missão. Quanto mais Δv, menos carga (equação do foguete simplificada)
+    capacidade(missao) {
+      if (!this.interplanetaria && missao.planeta.id !== 'terra') {
+        return { ok: false, motivo: 'Sem estágio interplanetário' };
+      }
+      let kg = this.capLEO * Math.exp(-(missao.dvTotal - DV_REF) / this.c);
+      kg = Math.min(kg, this.capLEO * 1.05);
+      if (kg < 50) return { ok: false, motivo: 'Δv acima do alcance' };
+      const passo = kg > 2000 ? 50 : 10;
+      return { ok: true, kg: Math.floor(kg / passo) * passo };
+    }
+
+    // preço fictício: (base + carga) × (Δv / Δv de referência)²
+    preco(missao, carga) {
+      const fator = Math.pow(missao.dvTotal / DV_REF, 2);
+      const custoCarga = carga * this.precoKg;
+      return { base: this.precoBase, carga: custoCarga, fator, total: (this.precoBase + custoCarga) * fator };
+    }
+  }
+
+  class Reserva {
+    constructor(dados) { Object.assign(this, dados); }
+    static proximoCodigo(lista) {
+      const maior = lista.reduce((m, r) => Math.max(m, parseInt(r.codigo.slice(4), 10) || 0), 0);
+      return 'APX-' + String(maior + 1).padStart(4, '0');
+    }
+  }
+
+  /* =====================================================
+     3. DADOS: PLANETAS E NAVES
+     raio = equatorial (km) · mu = GM (km³/s²) · rotacaoH = dia sideral (h)
+     ===================================================== */
+  const PLANETAS = [
+    { id: 'mercurio', nome: 'Mercúrio', raio: 2440.5, mu: 22031.9, rotacaoH: 1407.6, ua: 0.387, periodoAnos: 0.2408, L0: 252.25,
+      altMin: 100, cor: '#e6d5c3', tam: 5, mapaR: 62,
+      motivoMin: 'o satélite corre risco de bater no relevo',
+      desc: 'Sem atmosfera, mas muito perto do Sol: para ficar em órbita é preciso frear bastante na chegada.' },
+    { id: 'venus', nome: 'Vênus', raio: 6051.8, mu: 324859, rotacaoH: -5832.5, ua: 0.723, periodoAnos: 0.6152, L0: 181.98,
+      altMin: 250, cor: '#ffe2ad', tam: 8, mapaR: 92,
+      motivoMin: 'a atmosfera densa freia e derruba o satélite',
+      desc: 'Gira tão devagar (243 dias, ao contrário) que a órbita síncrona ficaria fora da esfera de Hill. Só LEO e MEO.' },
+    { id: 'terra', nome: 'Terra', raio: 6378.1, mu: 398600.4, rotacaoH: 23.9345, ua: 1.0, periodoAnos: 1.00002, L0: 100.46,
+      altMin: 160, cor: '#a9d6f5', tam: 8.5, mapaR: 124,
+      motivoMin: 'o arrasto atmosférico derruba o satélite em poucos dias',
+      desc: 'Lançamos daqui. Todas as órbitas clássicas, e o modo avançado tem atalhos para polar e sol-síncrona.' },
+    { id: 'marte', nome: 'Marte', raio: 3396.2, mu: 42828.4, rotacaoH: 24.6229, ua: 1.524, periodoAnos: 1.8808, L0: 355.45,
+      altMin: 200, cor: '#f7b3a3', tam: 6.5, mapaR: 158,
+      motivoMin: 'a atmosfera fina ainda freia o satélite',
+      desc: 'A órbita areoestacionária fica a cerca de 17 mil km. A janela de lançamento abre a cada 26 meses.' },
+    { id: 'jupiter', nome: 'Júpiter', raio: 71492, mu: 126686534, rotacaoH: 9.925, ua: 5.203, periodoAnos: 11.862, L0: 34.40,
+      altMin: 5000, cor: '#f5d0a9', tam: 17, mapaR: 212,
+      motivoMin: 'o satélite mergulha na atmosfera',
+      desc: 'Órbita circular baixa custa muito Δv. No modo avançado, uma apoapse bem alta deixa a captura barata.' },
+    { id: 'saturno', nome: 'Saturno', raio: 60268, mu: 37931187, rotacaoH: 10.656, ua: 9.537, periodoAnos: 29.457, L0: 49.94,
+      altMin: 4000, cor: '#f6e6a6', tam: 14, mapaR: 266, aneis: [66900, 136775],
+      motivoMin: 'o satélite mergulha na atmosfera',
+      desc: 'Os anéis vão de 6,6 mil a 76,5 mil km de altitude, e a órbita síncrona fica bem no meio deles.' },
+    { id: 'urano', nome: 'Urano', raio: 25559, mu: 5793939, rotacaoH: -17.24, ua: 19.19, periodoAnos: 84.011, L0: 313.23,
+      altMin: 3000, cor: '#b4ecd5', tam: 11, mapaR: 314,
+      motivoMin: 'o satélite mergulha na atmosfera',
+      desc: 'Eixo de rotação inclinado 98°: o planeta gira praticamente deitado.' },
+    { id: 'netuno', nome: 'Netuno', raio: 24764, mu: 6836529, rotacaoH: 16.11, ua: 30.07, periodoAnos: 164.8, L0: 304.88,
+      altMin: 3000, cor: '#b9c3f6', tam: 11, mapaR: 358,
+      motivoMin: 'o satélite mergulha na atmosfera',
+      desc: 'Uma transferência de Hohmann direta leva uns 30 anos. Missões reais usam a gravidade de Júpiter para encurtar.' }
+  ].map(d => new Planeta(d));
+
+  const NAVES = [
+    new Nave({ id: 'beijaflor', nome: 'Beija-flor', classe: 'Leve', capLEO: 1200, c: 3.0, interplanetaria: false,
+      precoBase: 35e6, precoKg: 9000, cor: '#f6b8c8', altura: 52, largura: 8, boosters: false,
+      desc: 'Para cubesats e pequenas constelações.' }),
+    new Nave({ id: 'arara', nome: 'Arara', classe: 'Média', capLEO: 9500, c: 3.3, interplanetaria: false,
+      precoBase: 180e6, precoKg: 4200, cor: '#a9d6f5', altura: 68, largura: 10, boosters: false,
+      desc: 'Primeiro estágio pousa de volta em Macapá.' }),
+    new Nave({ id: 'tuiuiu', nome: 'Tuiuiú', classe: 'Pesada', capLEO: 45000, c: 3.8, interplanetaria: true,
+      precoBase: 620e6, precoKg: 3000, cor: '#b4ecd5', altura: 80, largura: 11, boosters: true,
+      desc: 'Leva sondas a Marte e aos planetas internos.' }),
+    new Nave({ id: 'harpia', nome: 'Harpia', classe: 'Superpesada', capLEO: 120000, c: 4.4, interplanetaria: true,
+      precoBase: 1.6e9, precoKg: 2400, cor: '#c9b6f2', altura: 92, largura: 13, boosters: true,
+      desc: 'Estágio superior nuclear-térmico. Alcança qualquer planeta.' })
+  ];
+
+  /* =====================================================
+     4. FORMATAÇÃO
+     ===================================================== */
+  const nf0 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 });
+  const nf1 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const nf2 = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function arred(x, passo) { return Math.round(x / passo) * passo; }
+  function km(x) { return nf0.format(x) + ' km'; }
+  function kms(x) { return nf2.format(x) + ' km/s'; }
+  function graus(x) { return (Number.isInteger(x) ? nf0.format(x) : nf1.format(x)) + '°'; }
+  function dinheiro(v) {
+    if (v >= 1e9) return 'R$ ' + nf2.format(v / 1e9) + ' bi';
+    return 'R$ ' + nf1.format(v / 1e6) + ' mi';
+  }
+  function duracao(seg) {
+    const h = seg / 3600;
+    if (h < 48) {
+      let H = Math.floor(h), M = Math.round((h - H) * 60);
+      if (M === 60) { H += 1; M = 0; }
+      return H ? `${H} h ${M} min` : `${M} min`;
+    }
+    return nf1.format(h / 24) + ' dias';
+  }
+  function tempoViagem(seg) {
+    const dias = seg / 86400;
+    if (dias < 730) return nf1.format(dias / 30.44) + ' meses';
+    return nf1.format(dias / 365.25) + ' anos';
+  }
+  function limitar(x, a, b) { return Math.min(b, Math.max(a, x)); }
+
+  /* =====================================================
+     5. FÍSICA DA MISSÃO
+     ===================================================== */
+  const terra = PLANETAS.find(p => p.id === 'terra');
+
+  // velocidade numa órbita (equação vis-viva)
+  function visViva(mu, r, a) { return Math.sqrt(mu * (2 / r - 1 / a)); }
+
+  // transferência de Hohmann entre as órbitas de dois planetas em volta do Sol
+  function hohmannSolar(ua1, ua2) {
+    const r1 = ua1 * UA, r2 = ua2 * UA, a = (r1 + r2) / 2;
+    const v1 = Math.sqrt(MU_SOL / r1), v2 = Math.sqrt(MU_SOL / r2);
+    return {
+      vInfSaida: Math.abs(v1 * (Math.sqrt(2 * r2 / (r1 + r2)) - 1)),   // excesso de velocidade ao sair da Terra
+      vInfChegada: Math.abs(v2 * (1 - Math.sqrt(2 * r1 / (r1 + r2)))), // excesso de velocidade ao chegar
+      tempo: Math.PI * Math.sqrt(a * a * a / MU_SOL)                    // meia órbita de transferência (s)
+    };
+  }
+
+  // inclinação sol-síncrona aproximada para a Terra: cos i = −(a / 12 352 km)^3,5
+  function inclinacaoSSO(a) {
+    const x = Math.pow(a / 12352, 3.5);
+    return x > 1 ? null : Math.acos(-x) * 180 / Math.PI;
+  }
+
+  /* ---------- Datas e janelas de lançamento ----------
+     Modelo simplificado: órbitas circulares, todas no mesmo plano. Cada planeta
+     começa na sua longitude média de J2000 (1º jan 2000, 12h UTC) e gira com
+     velocidade angular constante. O erro fica em alguns dias ou semanas. */
+  const J2000 = Date.UTC(2000, 0, 1, 12);
+  const DIA_MS = 86400000;
+  const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  function rad(g) { return g * Math.PI / 180; }
+  function mod(a, m) { return ((a % m) + m) % m; }
+  function diasDeData(dt) { return (dt.getTime() - J2000) / DIA_MS; }
+  function dataDeDias(d) { return new Date(J2000 + d * DIA_MS); }
+  function hojeDias() {
+    const h = new Date();
+    return diasDeData(new Date(Date.UTC(h.getFullYear(), h.getMonth(), h.getDate(), 12)));
+  }
+  function diasDeInput(txt) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(txt || '');
+    return m ? diasDeData(new Date(Date.UTC(+m[1], m[2] - 1, +m[3], 12))) : null;
+  }
+  function inputDeDias(d) { return dataDeDias(d).toISOString().slice(0, 10); }
+  function dataCurta(d) {
+    const x = dataDeDias(Math.round(d));
+    return `${String(x.getUTCDate()).padStart(2, '0')} ${MESES[x.getUTCMonth()]} ${x.getUTCFullYear()}`;
+  }
+
+  // longitude do planeta em volta do Sol (graus) num dia contado a partir de J2000
+  function longitude(p, d) { return p.L0 + 360 * d / (p.periodoAnos * 365.25); }
+  // quantos graus o planeta está à frente (+) ou atrás (−) da Terra
+  function faseAtual(p, d) { return mod(longitude(p, d) - longitude(terra, d) + 180, 360) - 180; }
+
+  // próximas janelas de Hohmann a partir de um dia
+  function calcularJanelas(p, dInicio, n) {
+    const viagem = hohmannSolar(1, p.ua).tempo / 86400;             // dias
+    const wT = 360 / (p.periodoAnos * 365.25);                      // graus por dia do destino
+    const wE = 360 / (terra.periodoAnos * 365.25);                  // graus por dia da Terra
+    const rel = wT - wE;                                            // velocidade da fase
+    const sinodico = 360 / Math.abs(rel);                           // tempo entre janelas (dias)
+    // na chegada o destino tem que estar do lado oposto do Sol (180°) em relação à partida
+    const fase = mod(180 - wT * viagem + 180, 360) - 180;
+    const largura = limitar(sinodico * 0.03, 5, 30);               // margem da janela (dias)
+    const d0 = dInicio - largura;                                   // inclui janela que já abriu
+    const theta0 = longitude(p, d0) - longitude(terra, d0);
+    const t1 = d0 + mod((fase - theta0) * Math.sign(rel), 360) / Math.abs(rel);
+    const janelas = [];
+    for (let k = 0; k < n; k++) {
+      const lanc = Math.round(t1 + k * sinodico);
+      janelas.push({ lanc, cheg: Math.round(lanc + viagem), abre: Math.round(lanc - largura), fecha: Math.round(lanc + largura) });
+    }
+    return { fase, sinodico, viagem, largura, janelas };
+  }
+
+  function calcularMissao(planeta, o) {
+    const mu = planeta.mu;
+    const rp = planeta.raio + o.altP, ra = planeta.raio + o.altA;
+    const a = (rp + ra) / 2, e = (ra - rp) / (ra + rp);
+    const periodo = 2 * Math.PI * Math.sqrt(a * a * a / mu);
+    const vp = visViva(mu, rp, a), va = visViva(mu, ra, a);
+    const etapas = [];
+    let viagem = null;
+
+    if (planeta.id === 'terra') {
+      // subida: a rotação ajuda mais quanto mais perto do equatorial e prógrado (cos i)
+      const r0 = planeta.raio + Math.min(200, o.altP);
+      etapas.push({ nome: `Subida até ${km(r0 - planeta.raio)}`, dv: DV_SUBIDA - V_ROT_TERRA * Math.cos(o.inc * Math.PI / 180) });
+      if (rp > r0 + 1) {
+        // Hohmann de r0 até a periapse
+        const dv1 = Math.sqrt(mu / r0) * (Math.sqrt(2 * rp / (r0 + rp)) - 1);
+        const dv2 = Math.sqrt(mu / rp) * (1 - Math.sqrt(2 * r0 / (r0 + rp)));
+        etapas.push({ nome: `Transferência até ${km(o.altP)}`, dv: dv1 + dv2 });
+      }
+      const dvApo = vp - Math.sqrt(mu / rp);
+      if (dvApo > 0.0005) etapas.push({ nome: 'Elevar a apoapse', dv: dvApo });
+    } else {
+      // cônicas ajustadas: Terra → transferência solar → captura no planeta
+      const r0 = terra.raio + 200;
+      const h = hohmannSolar(1, planeta.ua);
+      etapas.push({ nome: 'Subida até órbita de espera (200 km)', dv: DV_REF });
+      etapas.push({ nome: 'Injeção interplanetária', dv: Math.sqrt(h.vInfSaida ** 2 + 2 * terra.mu / r0) - Math.sqrt(terra.mu / r0) });
+      etapas.push({ nome: `Captura em ${planeta.nome}`, dv: Math.max(0, Math.sqrt(h.vInfChegada ** 2 + 2 * mu / rp) - vp) });
+      viagem = h.tempo;
+    }
+    const dvTotal = etapas.reduce((s, x) => s + x.dv, 0);
+    return { planeta, orbita: o, rp, ra, a, e, periodo, vp, va, etapas, dvTotal, viagem };
+  }
+
+  function nomeOrbita(p, o) {
+    const e = (o.altA - o.altP) / (o.altA + o.altP + 2 * p.raio);
+    const f = p.faixas;
+    let tipo, incTxt = '';
+    if (e < 0.01) {
+      if (f.GEO && Math.abs(o.altP - p.altSincrona) < 300) {
+        tipo = p.id === 'terra' ? (o.inc < 1 ? 'GEO' : 'Geossíncrona inclinada') : (o.inc < 1 ? 'Síncrona equatorial' : 'Síncrona inclinada');
+      } else tipo = o.altA <= f.LEO[1] ? 'LEO circular' : 'MEO circular';
+    } else if (p.id === 'terra' && o.altP <= f.LEO[1] && Math.abs(o.altA - p.altSincrona) < 1500) {
+      tipo = 'GTO (transferência para GEO)';
+    } else tipo = e > 0.5 ? 'Altamente elíptica' : 'Elíptica';
+
+    const sso = p.id === 'terra' ? inclinacaoSSO(p.raio + (o.altP + o.altA) / 2) : null;
+    if (tipo === 'GEO' || tipo === 'Síncrona equatorial') incTxt = '';
+    else if (o.inc < 1) incTxt = 'equatorial';
+    else if (Math.abs(o.inc - 90) <= 2) incTxt = 'polar';
+    else if (sso && e < 0.01 && Math.abs(o.inc - sso) < 0.5) incTxt = 'sol-síncrona';
+    else if (o.inc > 90) incTxt = 'retrógrada';
+    return incTxt ? `${tipo} · ${incTxt}` : tipo;
+  }
+
+  /* =====================================================
+     6. ESTADO DA SIMULAÇÃO
+     ===================================================== */
+  const estado = {
+    planeta: terra,
+    tipo: 'LEO',
+    altitude: 550,
+    avancado: false,
+    altP: 550, altA: 550, inc: 0,
+    naveId: 'arara',
+    carga: 800
+  };
+  let missaoAtual = null;
+  let reservas = carregarReservas();
+
+  function orbitaAtual() {
+    const p = estado.planeta;
+    if (estado.avancado) return { altP: estado.altP, altA: estado.altA, inc: estado.inc };
+    if (estado.tipo === 'GEO') return { altP: p.altSincrona, altA: p.altSincrona, inc: 0 };
+    return { altP: estado.altitude, altA: estado.altitude, inc: 0 };
+  }
+
+  function validarOrbita(p, o) {
+    if (![o.altP, o.altA, o.inc].every(Number.isFinite)) return 'Preencha periapse, apoapse e inclinação com números.';
+    if (o.altP < p.altMin) return `A periapse precisa ficar acima de ${km(p.altMin)}. Abaixo disso ${p.motivoMin}.`;
+    if (o.altA < o.altP) return 'A apoapse não pode ser menor que a periapse. Para uma órbita circular, use o mesmo valor nas duas.';
+    if (o.altA > p.altMaxima) return `Acima de ${km(p.altMaxima)} a gravidade do Sol domina e a órbita deixa de ser estável.`;
+    if (o.inc < 0 || o.inc > 180) return 'A inclinação vai de 0° a 180°.';
+    return null;
+  }
+
+  /* =====================================================
+     7. ELEMENTOS DA PÁGINA
+     ===================================================== */
+  const $ = id => document.getElementById(id);
+  const svgNS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs, pai) {
+    const e = document.createElementNS(svgNS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (pai) pai.appendChild(e);
+    return e;
+  }
+  const reduzMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Mapa do Sistema Solar ---------- */
+  const mapa = $('mapa');
+  const gruposPlaneta = {};
+  const trilhas = {};
+  let camadaTransf; // camada onde a rota da viagem é desenhada
+
+  function montarMapa() {
+    const defs = svgEl('defs', {}, mapa);
+    const grad = svgEl('radialGradient', { id: 'gSol', cx: '50%', cy: '50%', r: '50%' }, defs);
+    svgEl('stop', { offset: '0', 'stop-color': '#fff7d6' }, grad);
+    svgEl('stop', { offset: '.45', 'stop-color': '#ffe3a6' }, grad);
+    svgEl('stop', { offset: '.7', 'stop-color': '#ffd3a8', 'stop-opacity': '.35' }, grad);
+    svgEl('stop', { offset: '1', 'stop-color': '#ffd3a8', 'stop-opacity': '0' }, grad);
+
+    PLANETAS.forEach(p => { trilhas[p.id] = svgEl('circle', { cx: 400, cy: 400, r: p.mapaR, class: 'trilha' }, mapa); });
+    svgEl('circle', { cx: 400, cy: 400, r: 58, fill: 'url(#gSol)' }, mapa);
+    svgEl('circle', { cx: 400, cy: 400, r: 24, fill: '#fff2c4' }, mapa);
+    camadaTransf = svgEl('g', {}, mapa); // fica abaixo dos planetas
+
+    PLANETAS.forEach((p, i) => {
+      // no SVG o eixo y aponta para baixo, por isso o sinal negativo (sentido anti-horário)
+      p.angulo = -rad(longitude(p, simDias));
+      // degradê de cada planeta: luz vinda do Sol, lado de trás escuro (fica bonito no zoom)
+      const gp = svgEl('radialGradient', { id: 'g-' + p.id, cx: '35%', cy: '32%', r: '75%' }, defs);
+      svgEl('stop', { offset: '0', 'stop-color': '#ffffff', 'stop-opacity': '.9' }, gp);
+      svgEl('stop', { offset: '.3', 'stop-color': p.cor }, gp);
+      svgEl('stop', { offset: '1', 'stop-color': p.cor, 'stop-opacity': '.55' }, gp);
+
+      const g = svgEl('g', { class: 'pl', tabindex: '0', role: 'button', 'aria-label': `Aproximar em ${p.nome}`, 'data-id': p.id }, mapa);
+      svgEl('circle', { r: p.tam + 14, class: 'pl-hit' }, g);
+      if (p.aneis) {
+        svgEl('ellipse', { rx: p.tam * 2.1, ry: p.tam * 0.62, fill: 'none', stroke: '#f1eca0', 'stroke-width': 3, opacity: .35, transform: 'rotate(-20)', class: 'pl-aneis' }, g);
+        svgEl('ellipse', { rx: p.tam * 1.7, ry: p.tam * 0.5, fill: 'none', stroke: '#f1eca0', 'stroke-width': 2, opacity: .7, transform: 'rotate(-20)', class: 'pl-aneis' }, g);
+      }
+      svgEl('circle', { r: p.tam, fill: `url(#g-${p.id})` }, g);
+      svgEl('circle', { r: p.tam + 6, class: 'pl-anel' }, g);
+      const t = svgEl('text', { x: p.tam + 10, y: 5, class: 'pl-nome' }, g);
+      t.textContent = p.nome;
+      const clicar = () => {
+        // clicar de novo no planeta já aproximado volta para a vista completa
+        if (alvoZoom === p.id) definirZoom(null);
+        else selecionarPlaneta(p.id, true);
+      };
+      g.addEventListener('click', clicar);
+      g.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); clicar(); }
+      });
+      gruposPlaneta[p.id] = g;
+      posicionarPlaneta(p);
+    });
+  }
+
+  function posicionarPlaneta(p) {
+    const x = 400 + p.mapaR * Math.cos(p.angulo);
+    const y = 400 + p.mapaR * Math.sin(p.angulo);
+    p.x = x; p.y = y; // guardado para o zoom seguir o planeta
+    gruposPlaneta[p.id].setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+    // rótulo vira para a esquerda quando o planeta está no lado direito do mapa
+    const t = gruposPlaneta[p.id].querySelector('text');
+    const direita = x > 560;
+    t.setAttribute('text-anchor', direita ? 'end' : 'start');
+    t.setAttribute('x', direita ? -(p.tam + 10) : p.tam + 10);
+  }
+
+  function montarChips() {
+    const box = $('chips');
+    PLANETAS.forEach(p => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.dataset.id = p.id;
+      b.innerHTML = `<i style="background:${p.cor}"></i>${p.nome}`;
+      b.addEventListener('click', () => selecionarPlaneta(p.id, true));
+      box.appendChild(b);
+    });
+  }
+
+  function marcarSelecaoNoMapa() {
+    PLANETAS.forEach(p => {
+      const sel = p === estado.planeta;
+      gruposPlaneta[p.id].classList.toggle('sel', sel);
+      trilhas[p.id].classList.toggle('sel', sel);
+      trilhas[p.id].style.stroke = sel ? p.cor : '';
+    });
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.id === estado.planeta.id));
+  }
+
+  /* ---------- Zoom do mapa ----------
+     O zoom é feito mudando o viewBox do SVG. A cada quadro a "câmera" (vista)
+     anda um pouco em direção ao alvo, o que dá o movimento suave. */
+  const VISTA_TOTAL = 800;
+  const vista = { x: 0, y: 0, w: VISTA_TOTAL };
+  let alvoZoom = null; // id do planeta aproximado, ou null para ver tudo
+
+  function definirZoom(id) {
+    alvoZoom = id;
+    $('btnZoom').hidden = !id;
+  }
+
+  function atualizarVista(dt) {
+    let tx = 0, ty = 0, tw = VISTA_TOTAL;
+    if (alvoZoom) {
+      const p = PLANETAS.find(x => x.id === alvoZoom);
+      tw = Math.max(150, p.tam * 12);      // planetas grandes pedem um enquadramento maior
+      tx = p.x - tw / 2;
+      ty = p.y - tw / 2;
+    }
+    const k = reduzMovimento ? 1 : 1 - Math.exp(-dt * 5); // suavização
+    vista.x += (tx - vista.x) * k;
+    vista.y += (ty - vista.y) * k;
+    vista.w += (tw - vista.w) * k;
+    mapa.setAttribute('viewBox', `${vista.x.toFixed(2)} ${vista.y.toFixed(2)} ${vista.w.toFixed(2)} ${vista.w.toFixed(2)}`);
+    mapa.style.setProperty('--k', (VISTA_TOTAL / vista.w).toFixed(3));
+  }
+
+  $('btnZoom').addEventListener('click', () => definirZoom(null));
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && alvoZoom) definirZoom(null); });
+
+  /* ---------- Seleção de planeta ---------- */
+  function selecionarPlaneta(id, zoom) {
+    const p = PLANETAS.find(x => x.id === id);
+    estado.planeta = p;
+    estado.tipo = 'LEO';
+    const [min, max] = p.faixas.LEO;
+    estado.altitude = p.id === 'terra' ? 550 : arred(min + (max - min) * 0.3, 10);
+    estado.altP = estado.altA = estado.altitude;
+    estado.inc = 0;
+    marcarSelecaoNoMapa();
+    renderPlaneta();
+    renderControlesOrbita();
+    escreverEntradasAvancadas();
+    estado.janela = 0;
+    renderJanelas();
+    renderCalculos();
+    if (zoom) definirZoom(p.id);
+  }
+
+  function renderPlaneta() {
+    const p = estado.planeta;
+    $('plBola').style.background = `radial-gradient(circle at 35% 30%, #ffffff 0%, ${p.cor} 45%, ${p.cor} 100%)`;
+    $('plNome').textContent = p.nome;
+    $('plDesc').textContent = p.desc;
+    const sinc = p.temSincrona ? km(p.altSincrona) : 'Indisponível';
+    const dia = duracao(Math.abs(p.rotacaoH) * 3600) + (p.rotacaoH < 0 ? ' (retrógrado)' : '');
+    $('plDados').innerHTML = `
+      <div><dt>Raio equatorial</dt><dd>${km(p.raio)}</dd></div>
+      <div><dt>Gravidade</dt><dd>${nf2.format(p.gravidade)} m/s²</dd></div>
+      <div><dt>Dia sideral</dt><dd>${dia}</dd></div>
+      <div><dt>Distância ao Sol</dt><dd>${nf2.format(p.ua)} UA</dd></div>
+      <div><dt>Órbita síncrona</dt><dd>${sinc}</dd></div>`;
+  }
+
+  /* ---------- Controles de órbita ---------- */
+  const sliderAlt = $('altitude');
+
+  function renderControlesOrbita() {
+    const p = estado.planeta, f = p.faixas;
+    document.querySelectorAll('.aba').forEach(b => {
+      const tipo = b.dataset.tipo;
+      b.setAttribute('aria-pressed', tipo === estado.tipo);
+      b.disabled = tipo === 'GEO' && !f.GEO;
+      b.title = b.disabled ? `${p.nome} não tem órbita síncrona estável` : '';
+    });
+    $('nomeSinc').textContent = p.id === 'terra' ? 'geoestacionária' : p.id === 'marte' ? 'areoestacionária' : 'síncrona';
+
+    if (estado.tipo === 'GEO') {
+      sliderAlt.hidden = true;
+      $('faixa').textContent = `Altitude fixa: o período orbital é igual ao dia de ${p.nome}.`;
+    } else {
+      const [min, max] = f[estado.tipo];
+      const passo = max - min > 20000 ? 100 : 10;
+      sliderAlt.hidden = false;
+      sliderAlt.min = min; sliderAlt.max = max; sliderAlt.step = passo;
+      estado.altitude = limitar(estado.altitude, min, max);
+      sliderAlt.value = estado.altitude;
+      $('faixa').textContent = `Faixa ${estado.tipo}: ${km(min)} a ${km(max)}`;
+    }
+    $('altOut').textContent = km(estado.tipo === 'GEO' ? p.altSincrona : estado.altitude);
+
+    // modo avançado
+    $('altP').min = p.altMin; $('altA').min = p.altMin;
+    $('altP').max = p.altMaxima; $('altA').max = p.altMaxima;
+    const ehTerra = p.id === 'terra';
+    $('lblP').textContent = ehTerra ? 'Periapse · perigeu (km)' : 'Periapse (km)';
+    $('lblA').textContent = ehTerra ? 'Apoapse · apogeu (km)' : 'Apoapse (km)';
+    document.querySelectorAll('.preset[data-so-terra]').forEach(b => { b.hidden = !ehTerra; });
+    $('incDica').textContent = ehTerra
+      ? 'Lançando do equador, órbitas prógradas (abaixo de 90°) aproveitam a rotação da Terra. Retrógradas custam mais Δv.'
+      : `Em ${p.nome}, a inclinação é ajustada na aproximação do planeta, sem custo extra neste modelo.`;
+  }
+
+  function escreverEntradasAvancadas() {
+    $('altP').value = Math.round(estado.altP);
+    $('altA').value = Math.round(estado.altA);
+    $('inc').value = estado.inc;
+    $('incNum').value = estado.inc;
+  }
+
+  /* ---------- Diagramas ---------- */
+  const diag = { ativo: false, M: 0 };
+
+  function desenharDiagramas(m) {
+    const topo = $('diagTopo');
+    topo.innerHTML = '';
+    const p = m.planeta;
+    const { a, e } = m;
+    const b = a * Math.sqrt(1 - e * e), c = a * e;
+    const s = Math.min(270 / (2 * a), 150 / (2 * b));
+    const cx = 150, cy = 92, fx = cx + c * s;
+
+    if (p.aneis) {
+      const [ri, re] = p.aneis;
+      svgEl('circle', { cx: fx, cy, r: ((ri + re) / 2) * s, class: 'd-anel', 'stroke-width': Math.max(1, (re - ri) * s) }, topo);
+    }
+    svgEl('circle', { cx: fx, cy, r: Math.max(2.5, p.raio * s), fill: p.cor }, topo);
+    svgEl('ellipse', { cx, cy, rx: a * s, ry: b * s, class: 'd-orb' }, topo);
+    svgEl('circle', { cx: cx + a * s, cy, r: 3, fill: 'var(--lavanda)' }, topo);
+    const tPe = svgEl('text', { x: Math.min(cx + a * s + 5, 278), y: cy - 6, class: 'd-txt d-txt-f' }, topo); tPe.textContent = 'Pe';
+    if (e > 0.01) {
+      svgEl('circle', { cx: cx - a * s, cy, r: 3, fill: 'var(--lavanda)' }, topo);
+      const tAp = svgEl('text', { x: Math.max(cx - a * s - 18, 2), y: cy - 6, class: 'd-txt d-txt-f' }, topo); tAp.textContent = 'Ap';
+    }
+    const legenda = svgEl('text', { x: 10, y: 180, class: 'd-txt' }, topo);
+    legenda.textContent = `Vista de cima, em escala · e = ${nf2.format(e)}`;
+    diag.sat = svgEl('circle', { r: 4, class: 'd-sat' }, topo);
+    Object.assign(diag, { ativo: true, fx, cy, a, b, e, s });
+    posicionarSatelite();
+
+    // vista lateral: inclinação
+    const lado = $('diagLado');
+    lado.innerHTML = '';
+    const defs = svgEl('defs', {}, lado);
+    const mk = svgEl('marker', { id: 'seta', viewBox: '0 0 10 10', refX: 5, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto' }, defs);
+    svgEl('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--lavanda)' }, mk);
+    svgEl('line', { x1: 8, y1: 66, x2: 132, y2: 66, class: 'd-eq' }, lado);
+    svgEl('circle', { cx: 70, cy: 66, r: 16, fill: p.cor }, lado);
+    const inc = m.orbita.inc * Math.PI / 180, L = 58;
+    svgEl('line', {
+      x1: 70 - L * Math.cos(inc), y1: 66 + L * Math.sin(inc),
+      x2: 70 + L * Math.cos(inc), y2: 66 - L * Math.sin(inc),
+      class: 'd-orb', 'marker-end': 'url(#seta)'
+    }, lado);
+    if (m.orbita.inc >= 1) {
+      const r = 30;
+      svgEl('path', { d: `M${70 + r} 66 A${r} ${r} 0 0 0 ${70 + r * Math.cos(inc)} ${66 - r * Math.sin(inc)}`, fill: 'none', stroke: 'var(--pessego)', 'stroke-width': 1.4 }, lado);
+    }
+    const ti = svgEl('text', { x: 70, y: 128, 'text-anchor': 'middle', class: 'd-txt d-txt-f' }, lado);
+    ti.textContent = `i = ${graus(m.orbita.inc)}`;
+  }
+
+  // posição do satélite pela equação de Kepler: mais rápido perto da periapse
+  function posicionarSatelite() {
+    if (!diag.ativo || !diag.sat) return;
+    const { e, M } = diag;
+    let E = e > 0.8 ? Math.PI : M;
+    for (let k = 0; k < 8; k++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    const x = diag.a * (Math.cos(E) - e), y = diag.b * Math.sin(E);
+    diag.sat.setAttribute('cx', (diag.fx + x * diag.s).toFixed(2));
+    diag.sat.setAttribute('cy', (diag.cy - y * diag.s).toFixed(2));
+  }
+
+  /* ---------- Naves ---------- */
+  function svgFoguete(n) {
+    const W = 40, base = 96, h = n.altura, w = n.largura, x = (W - w) / 2, topo = base - h, nariz = w * 1.7;
+    let s = '<svg class="nave-svg" viewBox="0 0 40 100" aria-hidden="true">';
+    if (n.boosters) {
+      const bw = w * 0.45, bh = h * 0.42;
+      [x - bw + 1, x + w - 1].forEach(bx => {
+        s += `<rect x="${bx}" y="${base - bh}" width="${bw}" height="${bh}" rx="${bw / 2}" style="fill:${n.cor};opacity:.6"/>`;
+      });
+    }
+    s += `<path d="M${x} ${base - 10} L${x - 5} ${base} L${x} ${base} Z M${x + w} ${base - 10} L${x + w + 5} ${base} L${x + w} ${base} Z" style="fill:${n.cor};opacity:.75"/>`;
+    s += `<path d="M${x} ${base} V${topo + nariz} Q${x} ${topo + nariz * 0.25} ${W / 2} ${topo} Q${x + w} ${topo + nariz * 0.25} ${x + w} ${topo + nariz} V${base} Z" style="fill:${n.cor}"/>`;
+    s += `<rect x="${x}" y="${topo + nariz + 5}" width="${w}" height="3" style="fill:var(--bg);opacity:.45"/>`;
+    s += `<circle cx="${W / 2}" cy="${topo + nariz + 14}" r="${w * 0.18}" style="fill:var(--bg);opacity:.5"/>`;
+    return s + '</svg>';
+  }
+
+  function montarNaves() {
+    const box = $('naves');
+    NAVES.forEach(n => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'nave'; b.dataset.id = n.id;
+      b.setAttribute('role', 'radio');
+      b.style.setProperty('--cor-nave', n.cor);
+      b.innerHTML = `${svgFoguete(n)}
+        <span class="nave-info">
+          <span class="nave-topo"><span class="nave-nome">${n.nome}</span><span class="tag">${n.classe}</span></span>
+          <span class="nave-desc">${n.desc}</span>
+          <span class="nave-cap" data-cap></span>
+        </span>`;
+      b.addEventListener('click', () => { estado.naveId = n.id; renderCalculos(); });
+      box.appendChild(b);
+    });
+  }
+
+  function renderNaves(m) {
+    const caps = {};
+    NAVES.forEach(n => { caps[n.id] = m ? n.capacidade(m) : { ok: false, motivo: 'Corrija a órbita' }; });
+
+    // se a nave escolhida não alcança, troca pela primeira que leva a carga (ou a de maior capacidade)
+    if (m && !caps[estado.naveId].ok) {
+      const validas = NAVES.filter(n => caps[n.id].ok);
+      const leva = validas.find(n => caps[n.id].kg >= estado.carga);
+      const melhor = leva || validas.sort((x, y) => caps[y.id].kg - caps[x.id].kg)[0];
+      if (melhor) estado.naveId = melhor.id;
+    }
+
+    document.querySelectorAll('.nave').forEach(b => {
+      const cap = caps[b.dataset.id];
+      b.disabled = !cap.ok;
+      b.setAttribute('aria-checked', b.dataset.id === estado.naveId && cap.ok);
+      b.querySelector('[data-cap]').textContent = cap.ok ? `Leva até ${nf0.format(cap.kg)} kg aqui` : cap.motivo;
+    });
+    return caps;
+  }
+
+  /* ---------- Cálculo + resumo ---------- */
+  function renderCalculos() {
+    const p = estado.planeta;
+    const o = orbitaAtual();
+    const erro = validarOrbita(p, o);
+    $('orbErro').hidden = !erro;
+    $('orbErro').textContent = erro || '';
+
+    if (erro) {
+      missaoAtual = null;
+      diag.ativo = false;
+      $('orbDados').innerHTML = '';
+      $('orbAviso').hidden = true;
+      renderNaves(null);
+      $('tabelaDv').innerHTML = '';
+      $('resumoDados').innerHTML = '';
+      $('tabelaPreco').innerHTML = '';
+      $('precoTotal').textContent = '—';
+      $('cargaErro').hidden = true;
+      $('btnReservar').disabled = true;
+      return;
+    }
+
+    const m = calcularMissao(p, o);
+    missaoAtual = m;
+    desenharDiagramas(m);
+
+    $('orbDados').innerHTML = `
+      <div><dt>Tipo</dt><dd>${nomeOrbita(p, o)}</dd></div>
+      <div><dt>Período</dt><dd>${duracao(m.periodo)}</dd></div>
+      <div><dt>Vel. na periapse</dt><dd>${kms(m.vp)}</dd></div>
+      ${m.e > 0.01 ? `<div><dt>Vel. na apoapse</dt><dd>${kms(m.va)}</dd></div>` : ''}`;
+
+    // aviso dos anéis de Saturno
+    if (p.aneis && m.rp <= p.aneis[1] && m.ra >= p.aneis[0]) {
+      $('orbAviso').hidden = false;
+      $('orbAviso').textContent = `Sua órbita cruza a região dos anéis (${km(p.aneis[0] - p.raio)} a ${km(p.aneis[1] - p.raio)} de altitude). Risco alto de colisão com gelo e poeira.`;
+    } else $('orbAviso').hidden = true;
+
+    const caps = renderNaves(m);
+    const nave = NAVES.find(n => n.id === estado.naveId);
+    const cap = caps[nave.id];
+
+    // tabela de Δv
+    $('tabelaDv').innerHTML = m.etapas.map(et => `<tr><td>${et.nome}</td><td>${kms(et.dv)}</td></tr>`).join('')
+      + `<tr class="total"><td>Δv total</td><td>${kms(m.dvTotal)}</td></tr>`;
+
+    const datas = datasDaMissao();
+    $('resumoDados').innerHTML = `
+      <div><dt>Partida</dt><dd>${dataCurta(datas.lanc)}</dd></div>
+      ${datas.cheg ? `<div><dt>Chegada</dt><dd>${dataCurta(datas.cheg)}</dd></div>` : ''}
+      <div><dt>Destino</dt><dd>${p.nome}</dd></div>
+      <div><dt>Órbita</dt><dd>${km(o.altP)} × ${km(o.altA)}</dd></div>
+      <div><dt>Inclinação</dt><dd>${graus(o.inc)}</dd></div>
+      ${m.viagem ? `<div><dt>Viagem (Hohmann)</dt><dd>${tempoViagem(m.viagem)}</dd></div>` : ''}`;
+
+    // carga
+    const carga = estado.carga;
+    let problemaCarga = null;
+    if (!cap.ok) problemaCarga = 'Nenhuma das nossas naves alcança essa órbita. Tente uma órbita mais baixa ou uma apoapse mais alta.';
+    else if (!Number.isFinite(carga) || carga <= 0) problemaCarga = 'Informe a massa da carga em quilos.';
+    else if (carga > cap.kg) problemaCarga = `A ${nave.nome} leva no máximo ${nf0.format(cap.kg)} kg nesta órbita.`;
+
+    const boxErro = $('cargaErro');
+    boxErro.hidden = !problemaCarga;
+    boxErro.innerHTML = '';
+    if (problemaCarga) {
+      boxErro.textContent = problemaCarga + ' ';
+      if (cap.ok && carga > cap.kg) {
+        const bt = document.createElement('button');
+        bt.type = 'button'; bt.className = 'link-btn';
+        bt.textContent = `Usar ${nf0.format(cap.kg)} kg`;
+        bt.addEventListener('click', () => { estado.carga = cap.kg; $('carga').value = cap.kg; renderCalculos(); });
+        boxErro.appendChild(bt);
+      }
+    }
+
+    if (cap.ok) {
+      const preco = nave.preco(m, Number.isFinite(carga) && carga > 0 ? carga : 0);
+      $('tabelaPreco').innerHTML = `
+        <tr><td>Lançamento ${nave.nome}</td><td>${dinheiro(preco.base)}</td></tr>
+        <tr><td>Carga (${nf0.format(carga || 0)} kg × R$ ${nf0.format(nave.precoKg)})</td><td>${dinheiro(preco.carga)}</td></tr>
+        <tr><td>Multiplicador de Δv</td><td>× ${nf2.format(preco.fator)}</td></tr>`;
+      $('precoTotal').textContent = dinheiro(preco.total);
+      missaoAtual.preco = preco.total;
+    } else {
+      $('tabelaPreco').innerHTML = '';
+      $('precoTotal').textContent = '—';
+    }
+    $('btnReservar').disabled = !!problemaCarga;
+  }
+
+  /* ---------- Eventos do painel ---------- */
+  document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => {
+    if (b.disabled) return;
+    const p = estado.planeta;
+    estado.tipo = b.dataset.tipo;
+    if (estado.tipo !== 'GEO') {
+      const [min, max] = p.faixas[estado.tipo];
+      if (estado.altitude < min || estado.altitude > max) {
+        estado.altitude = estado.tipo === 'MEO' && p.id === 'terra' ? 20200 : arred(min + (max - min) * 0.3, 10);
+      }
+    }
+    renderControlesOrbita();
+    renderCalculos();
+  }));
+
+  sliderAlt.addEventListener('input', () => {
+    estado.altitude = Number(sliderAlt.value);
+    $('altOut').textContent = km(estado.altitude);
+    renderCalculos();
+  });
+
+  $('avancado').addEventListener('change', ev => {
+    if (ev.target.checked) {
+      const o = orbitaAtual(); // ainda no modo simples
+      estado.altP = o.altP; estado.altA = o.altA; estado.inc = o.inc;
+      escreverEntradasAvancadas();
+    }
+    estado.avancado = ev.target.checked;
+    $('modoAvancado').hidden = !estado.avancado;
+    $('modoSimples').hidden = estado.avancado;
+    renderCalculos();
+  });
+
+  $('altP').addEventListener('input', ev => { estado.altP = parseFloat(ev.target.value); renderCalculos(); });
+  $('altA').addEventListener('input', ev => { estado.altA = parseFloat(ev.target.value); renderCalculos(); });
+  $('inc').addEventListener('input', ev => { estado.inc = Number(ev.target.value); $('incNum').value = estado.inc; renderCalculos(); });
+  $('incNum').addEventListener('input', ev => {
+    estado.inc = parseFloat(ev.target.value);
+    if (Number.isFinite(estado.inc)) $('inc').value = limitar(estado.inc, 0, 180);
+    renderCalculos();
+  });
+  $('presets').addEventListener('click', ev => {
+    const b = ev.target.closest('.preset');
+    if (!b) return;
+    let v;
+    if (b.dataset.inc === 'sso') {
+      const a = estado.planeta.raio + ((estado.altP || 0) + (estado.altA || 0)) / 2;
+      v = inclinacaoSSO(a);
+      if (v == null) { mostrarToast('Sol-síncrona só existe abaixo de uns 6 mil km de altitude.'); return; }
+      v = Math.round(v * 10) / 10;
+    } else v = Number(b.dataset.inc);
+    estado.inc = v;
+    $('inc').value = v; $('incNum').value = v;
+    renderCalculos();
+  });
+  $('carga').addEventListener('input', ev => { estado.carga = parseFloat(ev.target.value); renderCalculos(); });
+
+  /* ---------- Planejador de janelas ---------- */
+  let infoJanelas = null;
+
+  function dataMinima() {
+    const hoje = hojeDias();
+    const d = diasDeInput($('dataMin').value);
+    return d == null ? hoje : Math.max(hoje, d);
+  }
+
+  // datas usadas no resumo e na reserva
+  function datasDaMissao() {
+    if (!infoJanelas) return { lanc: dataMinima(), cheg: null };
+    const j = infoJanelas.janelas[estado.janela];
+    return { lanc: j.lanc, cheg: j.cheg };
+  }
+
+  function quandoTxt(j, hoje) {
+    if (hoje >= j.abre && hoje <= j.fecha) return 'Aberta agora';
+    const d = j.abre - hoje;
+    if (d < 0) return 'Já fechou';
+    if (d < 60) return `Abre em ${d} dias`;
+    if (d < 730) return `Abre em ${nf0.format(d / 30.44)} meses`;
+    return `Abre em ${nf1.format(d / 365.25)} anos`;
+  }
+
+  function renderJanelas() {
+    const p = estado.planeta;
+    const hoje = hojeDias();
+    const ehTerra = p.id === 'terra';
+    $('lblData').textContent = ehTerra ? 'Data de lançamento' : 'Lançar a partir de';
+    $('janelaBox').hidden = ehTerra;
+    $('btnVerTransf').textContent = `Ver a viagem até ${p.nome} no mapa`;
+
+    if (ehTerra) {
+      infoJanelas = null;
+      $('janelaDica').textContent = 'Para órbitas da Terra não existe janela: lançamos quase todos os dias. Escolha a data que preferir.';
+      return;
+    }
+
+    const info = calcularJanelas(p, dataMinima(), 4);
+    infoJanelas = info;
+    const f = Math.round(info.fase * 10) / 10;
+    $('janelaDica').textContent =
+      `Na rota mais econômica (Hohmann), a nave sai da Terra e chega a ${p.nome} do outro lado do Sol. ` +
+      `Para os dois se encontrarem lá, ${p.nome} precisa estar ${graus(Math.abs(f))} ${f >= 0 ? 'à frente' : 'atrás'} da Terra no dia da partida.`;
+
+    $('janelaDados').innerHTML = `
+      <div><dt>Ângulo de fase ideal</dt><dd>${graus(f)}</dd></div>
+      <div><dt>Ângulo hoje</dt><dd>${graus(Math.round(faseAtual(p, hoje) * 10) / 10)}</dd></div>
+      <div><dt>Uma janela a cada</dt><dd>${tempoViagem(info.sinodico * 86400)}</dd></div>
+      <div><dt>Duração da viagem</dt><dd>${tempoViagem(info.viagem * 86400)}</dd></div>`;
+
+    const box = $('janelas');
+    box.innerHTML = '';
+    info.janelas.forEach((j, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'janela';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', i === estado.janela);
+      const st = quandoTxt(j, hoje);
+      b.innerHTML = `
+        <span class="janela-st${st === 'Aberta agora' ? ' aberta' : ''}">${st}</span>
+        <span class="janela-l"><small>Partida</small>${dataCurta(j.lanc)}</span>
+        <span class="janela-l"><small>Chegada</small>${dataCurta(j.cheg)}</span>
+        <span class="janela-w">Margem de ±${Math.round(info.largura)} dias na partida</span>`;
+      b.addEventListener('click', () => { estado.janela = i; renderJanelas(); renderCalculos(); });
+      box.appendChild(b);
+    });
+
+    desenharJanela(p, info.janelas[estado.janela]);
+    $('legendaJ').innerHTML = `
+      <span><i style="background:${terra.cor}"></i>Terra na partida</span>
+      <span><i style="background:${p.cor};opacity:.35"></i>${p.nome} na partida</span>
+      <span><i style="background:${p.cor}"></i>${p.nome} na chegada</span>
+      <span><b></b>rota</span>`;
+  }
+
+  // vista de cima: Sol no centro, órbitas fora de escala, ângulos reais
+  function desenharJanela(p, j) {
+    const s = $('diagJanela');
+    s.innerHTML = '';
+    const cx = 150, cy = 100;
+    const externo = p.ua > 1;
+    const rE = externo ? 40 : 86, rT = externo ? 86 : 40;
+    const pt = (r, ang) => [cx + r * Math.cos(-rad(ang)), cy + r * Math.sin(-rad(ang))];
+
+    const defs = svgEl('defs', {}, s);
+    const mk = svgEl('marker', { id: 'setaJ', viewBox: '0 0 10 10', refX: 6, refY: 5, markerWidth: 6, markerHeight: 6, orient: 'auto' }, defs);
+    svgEl('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--pessego)' }, mk);
+
+    svgEl('circle', { cx, cy, r: rE, class: 'j-orb' }, s);
+    svgEl('circle', { cx, cy, r: rT, class: 'j-orb' }, s);
+    svgEl('circle', { cx, cy, r: 7, fill: '#fff2c4' }, s);
+
+    const Le = longitude(terra, j.lanc), Lt0 = longitude(p, j.lanc), Lt1 = longitude(p, j.cheg);
+    const fase = mod(Lt0 - Le + 180, 360) - 180;
+
+    // raios do Sol até a Terra e até o destino na partida
+    const [ex, ey] = pt(rE, Le), [tx, ty] = pt(rT, Lt0), [ax, ay] = pt(rT, Lt1);
+    svgEl('line', { x1: cx, y1: cy, x2: ex, y2: ey, class: 'j-raio' }, s);
+    svgEl('line', { x1: cx, y1: cy, x2: tx, y2: ty, class: 'j-raio' }, s);
+
+    // arco do ângulo de fase
+    let d = '';
+    for (let k = 0; k <= 24; k++) {
+      const [x, y] = pt(20, Le + fase * k / 24);
+      d += (k ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    svgEl('path', { d, class: 'j-fase' }, s);
+    const [lx, ly] = pt(externo ? 30 : 28, Le + fase / 2);
+    const tf = svgEl('text', { x: lx, y: ly + 4, 'text-anchor': 'middle', class: 'd-txt d-txt-f' }, s);
+    tf.textContent = 'φ';
+
+    // rota de Hohmann: meia elipse com o Sol num dos focos
+    const ep = (rT - rE) / (rT + rE), sl = 2 * rE * rT / (rE + rT);
+    d = '';
+    for (let k = 0; k <= 48; k++) {
+      const th = Math.PI * k / 48;
+      const [x, y] = pt(sl / (1 + ep * Math.cos(th)), Le + th * 180 / Math.PI);
+      d += (k ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    svgEl('path', { d, class: 'j-rota', 'marker-end': 'url(#setaJ)' }, s);
+
+    svgEl('circle', { cx: tx, cy: ty, r: 5, fill: p.cor, opacity: .35 }, s);
+    svgEl('circle', { cx: ax, cy: ay, r: 5, fill: p.cor }, s);
+    svgEl('circle', { cx: ex, cy: ey, r: 5, fill: terra.cor }, s);
+
+    const leg = svgEl('text', { x: 8, y: 194, class: 'd-txt' }, s);
+    leg.textContent = `φ = ${graus(Math.round(fase * 10) / 10)} na partida`;
+  }
+
+  $('dataMin').addEventListener('change', () => { estado.janela = 0; renderJanelas(); renderCalculos(); });
+  $('btnVerTransf').addEventListener('click', () => mostrarTransferencia());
+
+  /* ---------- Reservas ---------- */
+  function carregarReservas() {
+    try {
+      const txt = localStorage.getItem('apoastro-reservas');
+      return txt ? JSON.parse(txt).map(r => new Reserva(r)) : [];
+    } catch (e) { return []; }
+  }
+  function salvarReservas() {
+    try { localStorage.setItem('apoastro-reservas', JSON.stringify(reservas)); } catch (e) { /* sem armazenamento: tudo bem */ }
+  }
+
+  $('btnReservar').addEventListener('click', () => {
+    if (!missaoAtual || $('btnReservar').disabled) return;
+    const m = missaoAtual, nave = NAVES.find(n => n.id === estado.naveId);
+    const datas = datasDaMissao();
+    const r = new Reserva({
+      lancamento: datas.lanc,
+      chegada: datas.cheg,
+      codigo: Reserva.proximoCodigo(reservas),
+      planeta: m.planeta.nome,
+      cor: m.planeta.cor,
+      orbita: `${nomeOrbita(m.planeta, m.orbita)} · ${km(m.orbita.altP)} × ${km(m.orbita.altA)} · i ${graus(m.orbita.inc)}`,
+      nave: nave.nome,
+      carga: estado.carga,
+      preco: m.preco,
+      data: new Date().toISOString()
+    });
+    reservas.unshift(r);
+    salvarReservas();
+    renderReservas();
+    mostrarToast(`Reserva ${r.codigo} confirmada: ${nave.nome} rumo a ${r.planeta}, partida em ${dataCurta(r.lancamento)}.`);
+  });
+
+  function renderReservas() {
+    const ul = $('listaRes');
+    $('contReservas').textContent = reservas.length;
+    if (!reservas.length) {
+      ul.innerHTML = '<li class="vazio">Nenhuma reserva ainda. Monte uma missão acima e clique em Reservar lançamento.</li>';
+      return;
+    }
+    ul.innerHTML = '';
+    reservas.forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'res';
+      const data = new Date(r.data).toLocaleDateString('pt-BR');
+      li.innerHTML = `
+        <span class="res-cod">${r.codigo}</span>
+        <span class="res-desc">
+          <strong><i style="background:${r.cor}"></i>${r.planeta} · ${r.nave} · ${nf0.format(r.carga)} kg</strong>
+          <span>${r.orbita} · ${r.lancamento != null
+            ? 'partida ' + dataCurta(r.lancamento) + (r.chegada ? ' · chegada ' + dataCurta(r.chegada) : '')
+            : 'reservado em ' + data}</span>
+        </span>
+        <span class="res-preco">${dinheiro(r.preco)}</span>
+        <button class="btn-sec" type="button">Cancelar</button>`;
+      li.querySelector('button').addEventListener('click', () => {
+        reservas = reservas.filter(x => x.codigo !== r.codigo);
+        salvarReservas();
+        renderReservas();
+        mostrarToast(`Reserva ${r.codigo} cancelada.`);
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  /* ---------- Toast ---------- */
+  let timerToast;
+  function mostrarToast(txt) {
+    const t = $('toast');
+    t.textContent = txt;
+    t.classList.add('visivel');
+    clearTimeout(timerToast);
+    timerToast = setTimeout(() => t.classList.remove('visivel'), 3200);
+  }
+
+  /* =====================================================
+     8. ANIMAÇÃO (mapa, satélite do diagrama e capa)
+     ===================================================== */
+  // tempo do mapa: dias desde J2000. Velocidade normal: 1 ano a cada 30 s
+  const VEL_BASE = 365.25 / 30;
+  let simDias = hojeDias();
+  let velMapa = VEL_BASE;
+  let transf = null; // viagem mostrada no mapa
+  let ultimoDiaMostrado = null;
+
+  let pausado = reduzMovimento;
+  const btnPausa = $('btnPausa');
+  function definirPausa(v) {
+    pausado = v;
+    btnPausa.textContent = v ? 'Animar órbitas' : 'Pausar órbitas';
+  }
+  definirPausa(pausado);
+  btnPausa.addEventListener('click', () => definirPausa(!pausado));
+
+  function limparTransferencia() {
+    transf = null;
+    camadaTransf.innerHTML = '';
+    $('statusTransf').textContent = '';
+    velMapa = VEL_BASE;
+  }
+  $('btnHoje').addEventListener('click', () => { limparTransferencia(); simDias = hojeDias(); });
+
+  // desenha a rota no mapa e volta o tempo para o dia da partida
+  function mostrarTransferencia() {
+    if (!infoJanelas) return;
+    const p = estado.planeta, j = infoJanelas.janelas[estado.janela];
+    limparTransferencia();
+    const r1 = terra.mapaR, r2 = p.mapaR;
+    transf = {
+      p, lanc: j.lanc, cheg: j.cheg, Le: longitude(terra, j.lanc),
+      ep: (r2 - r1) / (r1 + r2), sl: 2 * r1 * r2 / (r1 + r2),
+      e: Math.abs(r2 - r1) / (r1 + r2), externo: r2 > r1, chegou: false
+    };
+    let d = '';
+    for (let k = 0; k <= 64; k++) {
+      const th = Math.PI * k / 64;
+      const [x, y] = pontoTransf(th);
+      d += (k ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    svgEl('path', { d, class: 'transf-arco' }, camadaTransf);
+    transf.nave = svgEl('circle', { r: 5, class: 'transf-nave' }, camadaTransf);
+
+    simDias = j.lanc;
+    velMapa = Math.max(VEL_BASE, (j.cheg - j.lanc) / 8); // a viagem dura uns 8 s na tela
+    definirZoom(null);
+    definirPausa(false);
+    if (window.innerWidth <= 960) $('mapa').scrollIntoView({ behavior: reduzMovimento ? 'auto' : 'smooth', block: 'center' });
+  }
+
+  // ponto da rota depois de percorrer o ângulo th (0 = partida, π = chegada)
+  function pontoTransf(th) {
+    const r = transf.sl / (1 + transf.ep * Math.cos(th));
+    const ang = -rad(transf.Le) - th;
+    return [400 + r * Math.cos(ang), 400 + r * Math.sin(ang)];
+  }
+
+  function atualizarMapa() {
+    PLANETAS.forEach(p => { p.angulo = -rad(longitude(p, simDias)); posicionarPlaneta(p); });
+    const dia = Math.round(simDias);
+    if (dia !== ultimoDiaMostrado) { ultimoDiaMostrado = dia; $('dataMapa').textContent = dataCurta(dia); }
+
+    if (transf) {
+      // a nave anda mais rápido perto do Sol (equação de Kepler na elipse de transferência)
+      const f = limitar((simDias - transf.lanc) / (transf.cheg - transf.lanc), 0, 1);
+      let th;
+      if (f >= 1) th = Math.PI;
+      else {
+        const e = transf.e;
+        const M = transf.externo ? Math.PI * f : Math.PI + Math.PI * f;
+        const E = kepler(M, e);
+        const nu = 2 * Math.atan2(Math.sqrt(1 + e) * Math.sin(E / 2), Math.sqrt(1 - e) * Math.cos(E / 2));
+        th = mod(nu - (transf.externo ? 0 : Math.PI), 2 * Math.PI);
+      }
+      const [x, y] = pontoTransf(th);
+      transf.nave.setAttribute('cx', x.toFixed(2));
+      transf.nave.setAttribute('cy', y.toFixed(2));
+      transf.nave.setAttribute('r', (5 * vista.w / VISTA_TOTAL).toFixed(2));
+      const total = transf.cheg - transf.lanc;
+      $('statusTransf').textContent = transf.chegou
+        ? `· chegou em ${transf.p.nome}`
+        : `· viagem até ${transf.p.nome}: dia ${nf0.format(Math.max(0, Math.round(f * total)))} de ${nf0.format(total)}`;
+    }
+  }
+
+  // satélite da capa: órbita elíptica com o planeta no foco
+  const hero = { a: 150, e: 0.55, fx: 240, cy: 200, M: 0, el: $('heroSat') };
+  hero.b = hero.a * Math.sqrt(1 - hero.e * hero.e);
+
+  function kepler(M, e) {
+    let E = e > 0.8 ? Math.PI : M;
+    for (let k = 0; k < 8; k++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    return E;
+  }
+
+  let ultimo = null;
+  function quadro(t) {
+    if (ultimo === null) ultimo = t;
+    const dt = Math.min(0.05, (t - ultimo) / 1000);
+    ultimo = t;
+    if (!pausado) {
+      simDias += dt * velMapa;
+      if (transf && !transf.chegou && simDias >= transf.cheg) {
+        simDias = transf.cheg;
+        transf.chegou = true;
+        velMapa = VEL_BASE;
+        definirPausa(true);
+        mostrarToast(`Chegada em ${transf.p.nome}: ${dataCurta(transf.cheg)}.`);
+      }
+      diag.M = (diag.M + dt * 2 * Math.PI / 6) % (2 * Math.PI);
+      posicionarSatelite();
+      hero.M = (hero.M + dt * 2 * Math.PI / 7) % (2 * Math.PI);
+      const E = kepler(hero.M, hero.e);
+      hero.el.setAttribute('cx', (hero.fx + hero.a * (Math.cos(E) - hero.e)).toFixed(2));
+      hero.el.setAttribute('cy', (hero.cy - hero.b * Math.sin(E)).toFixed(2));
+    }
+    atualizarMapa();
+    atualizarVista(dt); // o zoom anima mesmo com as órbitas pausadas
+    requestAnimationFrame(quadro);
+  }
+
+  /* ---------- Céu estrelado ---------- */
+  const ceu = $('ceu'), ctx = ceu.getContext('2d');
+  function desenharCeu() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = window.innerWidth, h = window.innerHeight;
+    ceu.width = w * dpr; ceu.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    let semente = 7;
+    const rnd = () => (semente = (semente * 16807) % 2147483647) / 2147483647;
+    const cores = ['#ffffff', '#c9b6f2', '#a9d6f5', '#f6b8c8', '#ffd3a8'];
+    const n = Math.round(w * h / 2600);
+    for (let i = 0; i < n; i++) {
+      const x = rnd() * w, y = rnd() * h;
+      const r = rnd() < 0.93 ? rnd() * 0.8 + 0.2 : rnd() * 1.3 + 0.8;
+      ctx.globalAlpha = 0.2 + rnd() * 0.55;
+      ctx.fillStyle = cores[Math.floor(rnd() * cores.length)];
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  let timerCeu;
+  window.addEventListener('resize', () => { clearTimeout(timerCeu); timerCeu = setTimeout(desenharCeu, 150); });
+
+  /* =====================================================
+     9. NAVEGAÇÃO ENTRE PÁGINAS (#menu, #simule, #contato)
+     ===================================================== */
+  const ROTAS = ['menu', 'simule', 'contato'];
+  let irParaReservas = false;
+
+  function mostrarRota() {
+    const pedido = location.hash.slice(1);
+    const rota = ROTAS.includes(pedido) ? pedido : 'menu';
+    document.querySelectorAll('[data-pagina]').forEach(s => { s.hidden = s.dataset.pagina !== rota; });
+    document.querySelectorAll('.nav a[data-rota]').forEach(a => {
+      if (a.dataset.rota === rota) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    if (irParaReservas && rota === 'simule') {
+      irParaReservas = false;
+      requestAnimationFrame(() => $('reservas').scrollIntoView({ block: 'start' }));
+    } else window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', mostrarRota);
+
+  $('btnReservas').addEventListener('click', () => {
+    if (location.hash === '#simule') $('reservas').scrollIntoView({ behavior: reduzMovimento ? 'auto' : 'smooth', block: 'start' });
+    else { irParaReservas = true; location.hash = 'simule'; }
+  });
+
+  /* =====================================================
+     10. CONTATO
+     ===================================================== */
+  $('formContato').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const form = ev.target;
+    const erro = $('formErro');
+    const invalido = [...form.querySelectorAll('[required]')].find(c => !c.checkValidity());
+    if (invalido) {
+      const nomes = { nome: 'seu nome', email: 'um e-mail válido', mensagem: 'a mensagem' };
+      erro.textContent = `Preencha ${nomes[invalido.id]} para enviar.`;
+      erro.hidden = false;
+      invalido.focus();
+      return;
+    }
+    erro.hidden = true;
+    const primeiroNome = $('nome').value.trim().split(/\s+/)[0];
+    $('okTitulo').textContent = `Obrigado, ${primeiroNome}!`;
+    $('okTexto').textContent = `Registramos sua mensagem sobre "${$('assunto').value}". Como o site é fictício, nada foi enviado de verdade.`;
+    $('formCampos').hidden = true;
+    $('formOk').hidden = false;
+  });
+  $('btnNovaMsg').addEventListener('click', () => {
+    $('formContato').reset();
+    $('formCampos').hidden = false;
+    $('formOk').hidden = true;
+    $('nome').focus();
+  });
+  $('btnCopiar').addEventListener('click', () => {
+    const texto = $('emailTxt').textContent;
+    const selecionar = () => {
+      const r = document.createRange(); r.selectNodeContents($('emailTxt'));
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      mostrarToast('E-mail selecionado. Use Ctrl+C para copiar.');
+    };
+    try {
+      navigator.clipboard.writeText(texto).then(() => mostrarToast('E-mail copiado.'), selecionar);
+    } catch (e) { selecionar(); }
+  });
+
+  /* =====================================================
+     11. INÍCIO
+     ===================================================== */
+  desenharCeu();
+  montarMapa();
+  montarChips();
+  montarNaves();
+  $('dataMin').min = inputDeDias(hojeDias());
+  $('dataMin').value = inputDeDias(hojeDias());
+  selecionarPlaneta('terra', false);
+  renderReservas();
+  mostrarRota();
+  requestAnimationFrame(quadro);
+})();
+</script>
+</body>
+</html>
